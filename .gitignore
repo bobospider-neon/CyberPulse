@@ -1,0 +1,13 @@
+# pitch deck and its capture pipeline (kept outside the repo)
+presentation/
+
+# NISAR source products (GB each; only the converted values in data/ are needed)
+*.h5
+
+# generated or temporary
+qa/
+_tiles/
+dist/_bundle_check.mjs
+node_modules/
+__pycache__/
+*.pyc

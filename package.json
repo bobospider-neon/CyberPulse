@@ -1,0 +1,17 @@
+{
+  "name": "chrono-sar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CHRONO-SAR · 4D NISAR Earth-motion engine (NASA Space Apps 2026 · Dancing with the SARs)",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "dev": "node tools/serve.mjs --watch",
+    "lan": "node tools/serve.mjs --watch --lan",
+    "build": "node tools/build.mjs",
+    "vendor": "node tools/fetch_vendor.mjs",
+    "qa": "node tools/qa_node.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

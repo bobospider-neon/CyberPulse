@@ -1,0 +1,23 @@
+{
+  "fetched": "2026-11-13T14:51:47.481Z",
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/",
+  "threeFiles": [
+    "build/three.module.js",
+    "examples/jsm/controls/OrbitControls.js",
+    "examples/jsm/postprocessing/EffectComposer.js",
+    "examples/jsm/postprocessing/RenderPass.js",
+    "examples/jsm/postprocessing/UnrealBloomPass.js",
+    "examples/jsm/postprocessing/ShaderPass.js",
+    "examples/jsm/postprocessing/Pass.js",
+    "examples/jsm/environments/RoomEnvironment.js",
+    "examples/jsm/utils/BufferGeometryUtils.js",
+    "examples/jsm/shaders/CopyShader.js",
+    "examples/jsm/postprocessing/MaskPass.js",
+    "examples/jsm/shaders/LuminosityHighPassShader.js"
+  ],
+  "exceljs": "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js",
+  "fonts": [
+    "https://fonts.googleapis.com/css2?family=Saira:wdth,wght@50..125,100..900&display=swap",
+    "https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap"
+  ]
+}

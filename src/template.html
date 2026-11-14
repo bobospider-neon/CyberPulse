@@ -1,0 +1,372 @@
+<title>CHRONO-SAR</title>
+<meta name="description" content="CHRONO-SAR: a 4D holographic engine that turns NISAR L- and S-band radar physics into living 3D terrain. NASA Space Apps Challenge 2026 · Dancing with the SARs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@50..125,100..900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap">
+<style>/*__CSS__*/</style>
+<!--__HEAD_END__-->
+<div id="stage"><canvas id="gl" aria-label="3D radar scene"></canvas></div>
+<div id="split2d" aria-label="2D radar map">
+  <div class="xhair" id="split-xhair"></div>
+  <div class="cap" id="split-cap">RADAR GEOMETRY · <b>2D INTERFEROGRAM</b></div>
+</div>
+<div id="crt" aria-hidden="true"></div>
+<div id="labels" aria-hidden="true"></div>
+<div id="cursor-tip"></div>
+
+<div id="hud">
+  <header id="topbar" class="hidden-ui">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="#ffb648" stroke-width="1.2" stroke-dasharray="3 2.2" opacity=".85"/>
+        <circle cx="20" cy="20" r="12" fill="none" stroke="#3ee6ff" stroke-width="1.2" opacity=".9"/>
+        <circle cx="20" cy="20" r="5.5" fill="none" stroke="#dcebfa" stroke-width="1" opacity=".7"/>
+        <path d="M20 20 L20 2 A18 18 0 0 1 35.6 11 Z" fill="url(#bm-sweep)">
+          <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="3.2s" repeatCount="indefinite"/>
+        </path>
+        <circle cx="20" cy="20" r="1.8" fill="#fff"/>
+        <defs><linearGradient id="bm-sweep" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#3ee6ff" stop-opacity="0"/><stop offset="1" stop-color="#3ee6ff" stop-opacity=".75"/></linearGradient></defs>
+      </svg>
+      <div class="brand-text"><b>CHRONO<i>·</i>SAR</b><span>4D NISAR Earth-motion engine</span></div>
+    </div>
+    <nav class="crumbs" aria-label="Current scene">
+      <button class="btn" id="btn-deck" title="Mission deck (M)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="5" height="5"/><rect x="9.5" y="2.5" width="5" height="5"/><rect x="1.5" y="9.5" width="5" height="5"/><rect x="9.5" y="9.5" width="5" height="5"/></svg><span class="lbl-t">Mission deck</span></button>
+      <span class="waltz" id="crumb-waltz">NISAR · GLOBAL COVERAGE</span>
+      <span class="site" id="crumb-site">Planet Earth<small>12-day repeat orbit</small></span>
+    </nav>
+    <div class="status">
+      <span class="stat" id="utc">UTC --:--:--</span>
+      <span class="stat l hide-m">L 1.257 GHz · λ 23.85 cm</span>
+      <span class="stat s hide-m">S 3.20 GHz · λ 9.37 cm</span>
+      <span class="stat hide-m">747 km · 98.4° · 12 d</span>
+      <span class="stat" id="fps">-- FPS</span>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btn-globe" title="Back to the globe (G)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.3"/><ellipse cx="8" cy="8" rx="2.8" ry="6.3"/><path d="M1.8 8h12.4"/></svg><span class="lbl-t">Globe</span></button>
+      <button class="btn primary keep-m" id="btn-tour" title="Guided jury tour (T)"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg><span class="lbl-t">Jury tour</span></button>
+      <button class="btn" id="btn-codex" title="Physics codex (C)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 2.5h7.5L13 5v8.5H3z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg><span class="lbl-t">Physics codex</span></button>
+      <button class="btn" id="btn-export" title="Export data: Excel workbook or CSV pack (E)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 2.2v7.6M4.9 6.9 8 10l3.1-3.1"/><path d="M2.5 10.2v3.3h11v-3.3"/></svg><span class="lbl-t">Export</span></button>
+      <button class="btn icon keep-m" id="btn-sound" aria-pressed="false" title="Sound on/off"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z" fill="currentColor"/><path class="snd-on" d="M11 5.2c1 .8 1.5 1.7 1.5 2.8s-.5 2-1.5 2.8M12.7 3.5c1.5 1.2 2.3 2.7 2.3 4.5s-.8 3.3-2.3 4.5"/></svg></button>
+      <button class="btn" id="btn-satcam" aria-pressed="false" title="NISAR close-up (N)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10.5a5.5 5.5 0 0 0 5.5-5.5"/><path d="M1.5 12.5 6 8"/><rect x="8.6" y="1.6" width="3" height="3" transform="rotate(45 10.1 3.1)"/><path d="M10.6 5.6 13.8 8.8M5.6 10.6 8.8 13.8"/></svg><span class="lbl-t">NISAR</span></button>
+      <button class="btn icon" id="btn-full" title="Fullscreen (F)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+    </div>
+  </header>
+
+  <!-- ═════════ GLOBE VIEW HUD ═════════ -->
+  <div id="globe-hud" class="off">
+    <div class="hero">
+      <div class="eyebrow">NASA Space Apps 2026 · Dancing with the SARs</div>
+      <h1>Earth never stands still. <span>NISAR hears it move.</span></h1>
+      <p>Two radars on one spacecraft, L-band and S-band, revisit every land and ice surface every 12 days and measure motion to the millimetre. CHRONO-SAR turns that radar physics into living 3D ground you can play with. Pick a waltz below.</p>
+      <div class="cta"><button class="btn primary" id="hero-tour"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>Start the jury tour</button><button class="btn" id="hero-codex">Read the physics</button></div>
+    </div>
+    <section class="panel telemetry" aria-label="NISAR orbit telemetry">
+      <header><span class="led"></span>NISAR orbit telemetry<span class="grow"></span><span class="badge">SIM · LIVE</span></header>
+      <div class="panel-body">
+        <dl class="rows">
+          <dt>Sub-satellite</dt><dd id="tele-ll">--</dd>
+          <dt>Pass</dt><dd id="tele-pass">--</dd>
+          <dt>Altitude</dt><dd>747 km · SSO 98.4°</dd>
+          <dt>Orbit period</dt><dd>99.9 min</dd>
+          <dt>Repeat cycle</dt><dd>12 days · 173 orbits</dd>
+          <dt>Swath</dt><dd>242 km · SweepSAR</dd>
+          <dt>Look</dt><dd>Left · θ 33°–47°</dd>
+          <dt>Orbit no.</dt><dd id="tele-orbit">--</dd>
+        </dl>
+        <div class="flabel"><span>12-day coverage</span><output id="tele-cov">0 %</output></div>
+        <div class="cov-bar"><i id="tele-covbar"></i></div>
+        <div class="hint">Every stripe on the globe is one 242 km NISAR swath. The time-lapse runs one full 12-day repeat cycle in about a minute.</div>
+      </div>
+    </section>
+    <div class="globe-deck"><div class="deck-grid" id="globe-deck-grid"></div></div>
+  </div>
+
+  <!-- ═════════ LEFT DOCK · RADAR PHYSICS CONTROL ═════════ -->
+  <aside id="dock-left" class="dock off-left" aria-label="Radar physics control">
+    <section class="panel" id="panel-radar">
+      <header><span class="led amber"></span>Radar physics control<span class="grow"></span><span class="badge">TERRAPULSE CORE</span></header>
+      <div class="panel-body">
+        <div class="field" id="f-band">
+          <span class="flabel"><span>Frequency band</span><span class="mono" style="letter-spacing:0" id="band-lambda">λ 23.85 cm</span></span>
+          <div class="seg" id="seg-band" role="group" aria-label="Band">
+            <button class="l" data-v="L" aria-pressed="true">L-BAND<small>23.85 cm · sees through</small></button>
+            <button data-v="S" aria-pressed="false">S-BAND<small>9.37 cm · canopy top</small></button>
+            <button class="x" data-v="X" aria-pressed="false">X-RAY LENS<small>L inside · S outside</small></button>
+          </div>
+        </div>
+        <div class="field" id="f-mode">
+          <span class="flabel"><span>Observable</span><span class="mono" style="letter-spacing:0">1–4</span></span>
+          <div class="seg c4" id="seg-mode" role="group" aria-label="Observable">
+            <button data-v="phase" aria-pressed="true">InSAR PHASE<small>wrapped 2π fringes</small></button>
+            <button data-v="defo" aria-pressed="false">3D DEFORMATION<small>unwrapped, mm</small></button>
+            <button data-v="pol" aria-pressed="false">POLARIMETRY<small>Freeman–Durden RGB</small></button>
+            <button data-v="coh" aria-pressed="false">COHERENCE γ<small>damage &amp; decorrelation</small></button>
+          </div>
+        </div>
+        <div class="field" id="f-exag">
+          <label for="exag"><span>Deformation exaggeration</span><output id="exag-out">×1000</output></label>
+          <div class="range"><input type="range" id="exag" min="0" max="1000" step="1" value="811" aria-label="Deformation exaggeration"></div>
+          <div class="ticks"><span>1× real</span><span>100×</span><span>5000× tectonic</span></div>
+        </div>
+        <div class="field" id="f-geom">
+          <span class="flabel"><span>Orbit geometry</span><span class="mono" style="letter-spacing:0" id="geom-info">θ 39° · hdg 345°</span></span>
+          <div class="seg" id="seg-geom" role="group" aria-label="Orbit geometry">
+            <button data-v="asc" aria-pressed="true">ASCENDING<small>looks WSW</small></button>
+            <button data-v="desc" aria-pressed="false">DESCENDING<small>looks ESE</small></button>
+            <button data-v="fusion" aria-pressed="false">3D FUSION<small>Uₑ Uₙ U_z</small></button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="flabel"><span>Interferogram pair</span></span>
+          <div class="seg c2" id="seg-pair" role="group" aria-label="Interferogram pair">
+            <button data-v="cum" aria-pressed="true">CUMULATIVE<small>time series since first pass</small></button>
+            <button data-v="seq" aria-pressed="false">SEQUENTIAL<small>12-day pairs</small></button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="flabel"><span>Layers</span></span>
+          <div class="chips" id="chips">
+            <button class="chip" id="tg-mask" aria-pressed="true" title="Grey out pixels with coherence below 0.25 (standard InSAR practice)">γ mask</button>
+            <button class="chip" id="tg-aps" aria-pressed="true" title="Tropospheric phase screen (turbulent + stratified)">Atmosphere</button>
+            <button class="chip" id="tg-vectors" aria-pressed="false" title="3D displacement vectors">3D vectors</button>
+            <button class="chip" id="tg-canopy" aria-pressed="true" title="Canopy volume scatterers">Canopy</button>
+            <button class="chip" id="tg-beam" aria-pressed="true" title="NISAR radar beam">Radar beam</button>
+            <button class="chip" id="tg-subsurface" aria-pressed="true" title="Magma source / fault plane">Subsurface</button>
+            <button class="chip" id="tg-cycle" aria-pressed="false" title="Cosmetic colour-map cycling">Fringe flow</button>
+            <button class="chip" id="tg-labels" aria-pressed="true">Labels</button>
+          </div>
+        </div>
+        <div class="acts">
+          <button class="act gold" id="act-unwrap">PHASE UNWRAPPING<small>quality-guided flood fill</small></button>
+          <button class="act red" id="act-ccd">RUN CCD<small>coherence change detection</small></button>
+          <button class="act" id="act-slice" aria-pressed="false">CROSS-SECTION<small>drag a line on the terrain</small></button>
+          <button class="act" id="act-split" aria-pressed="false">SPLIT VIEW<small>2D radar ⟷ 3D</small></button>
+          <button class="act wide export" id="act-export"><span class="dl-ico" aria-hidden="true"><i></i><i></i><i></i><i></i></span>EXPORT DATA · EXCEL + CSV<small>colour-coded workbook with an explanation for every dataset</small></button>
+          <button class="act wide" id="act-load">LOAD REAL NISAR / HyP3 DATA<small>drop a CSAR-PACK .png + .json (made by tools/csar_pack.py)</small></button>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ═════════ RIGHT DOCK · LIVE INSPECTOR ═════════ -->
+  <aside id="dock-right" class="dock off-right" aria-label="Live inspector">
+    <section class="panel" id="panel-inspector">
+      <header><span class="led"></span>Live inspector · phasor clock<span class="grow"></span><span class="badge" id="insp-state">PINNED</span></header>
+      <div class="panel-body">
+        <div class="phasor-row">
+          <canvas id="phasor" width="300" height="300" aria-label="Complex phasor diagram"></canvas>
+          <div class="big-read">
+            <div><div class="k">Phase φ (wrapped)</div><div class="v" id="ph-phi">--</div></div>
+            <div><div class="k">LoS displacement</div><div class="v" id="ph-disp">--</div></div>
+            <div><div class="k">Coherence γ</div><div class="v" id="ph-coh">--</div></div>
+          </div>
+        </div>
+        <div class="formula" id="insp-formula">Δd = λ/4π · Δφ</div>
+        <dl class="rows" id="insp-rows"></dl>
+        <div class="sub-h">Freeman–Durden · <span id="fd-band">L</span>-band</div>
+        <div class="fd">
+          <div class="fd-row"><span>Double-bounce</span><div class="fd-bar"><i id="fd-pd" style="background:var(--pol-r)"></i></div><b id="fd-pdv">--</b></div>
+          <div class="fd-row"><span>Volume</span><div class="fd-bar"><i id="fd-pv" style="background:var(--pol-g)"></i></div><b id="fd-pvv">--</b></div>
+          <div class="fd-row"><span>Surface</span><div class="fd-bar"><i id="fd-ps" style="background:var(--pol-b)"></i></div><b id="fd-psv">--</b></div>
+        </div>
+        <div class="mech" id="fd-mech">--</div>
+        <div class="sub-h">Time series · LoS since first pass</div>
+        <canvas id="tschart" aria-label="Displacement time series"></canvas>
+      </div>
+    </section>
+    <section class="panel" id="panel-intel">
+      <header><span class="led amber"></span>Scenario intel<span class="grow"></span><span class="badge" id="intel-badge">--</span></header>
+      <div class="panel-body">
+        <div class="intel-title" id="intel-title">--</div>
+        <div class="intel-text" id="intel-text"></div>
+        <div class="kpis" id="intel-kpis"></div>
+        <div class="acts" id="intel-actions"></div>
+      </div>
+    </section>
+    <section class="panel" id="panel-real" hidden>
+      <header><span class="led"></span>Real NISAR data · NASA Earthdata<span class="grow"></span><span class="badge" id="real-badge">--</span></header>
+      <div class="panel-body">
+        <div class="real-last" id="real-last">--</div>
+        <div class="sub-h" id="real-inv-h">In NASA's archive over this scene</div>
+        <div class="real-inv" id="real-inv"></div>
+        <div class="seg c2" id="seg-real" role="group" aria-label="Real NISAR product">
+          <button data-v="GUNW" aria-pressed="true">INTERFEROGRAM<small>GUNW · phase between passes</small></button>
+          <button data-v="GCOV" aria-pressed="false">POLARIMETRY<small>GCOV · HH / HV backscatter</small></button>
+        </div>
+        <div class="real-list" id="real-list" aria-label="Real NISAR products over this scene"></div>
+        <div class="acts"><button class="act wide real" id="act-real" aria-pressed="false">SHOW REAL NISAR ON THE TERRAIN<small>R · the actual radar image, draped on the real DEM</small></button></div>
+        <div class="real-probe" id="real-probe" hidden></div>
+        <div class="real-links" id="real-links"></div>
+        <div class="hint" id="real-note"></div>
+      </div>
+    </section>
+  </aside>
+
+  <div id="legend" class="panel off" aria-live="polite"><div class="lg-t" id="lg-title">--</div><div class="lg-bar" id="lg-bar"></div><div class="lg-ticks" id="lg-ticks"></div></div>
+
+  <section class="panel" id="satcam-hud" aria-label="NISAR close-up">
+    <header><span class="led amber"></span>NISAR observatory · close-up<span class="grow"></span><span class="badge">NASA–ISRO · launched 30 Jul 2025</span></header>
+    <div class="panel-body">
+      <div class="sc-specs">
+        <div><b>12 m</b><span>AstroMesh reflector, gold-plated wire knit</span></div>
+        <div><b>9 m</b><span>deployable boom with four hinges</span></div>
+        <div><b style="color:var(--lband)">L 1.257 GHz</b><span>NASA/JPL L-SAR feed array</span></div>
+        <div><b style="color:var(--sband)">S 3.20 GHz</b><span>ISRO S-SAR feed array</span></div>
+      </div>
+      <div class="sc-acts"><button class="act gold" id="satcam-deploy">REPLAY DEPLOYMENT<small>boom unfolds, reflector opens</small></button><button class="act" id="satcam-exit">BACK TO TERRAIN<small>Esc · N</small></button></div>
+      <div class="hint">Drag to orbit and scroll to zoom. The feed arrays pulse, radar energy travels to the reflector, the thrusters fire and the sun glints off the mesh.</div>
+    </div>
+  </section>
+
+  <div class="mobile-tabs">
+    <button class="btn" id="mtab-left">Controls</button>
+    <button class="btn" id="mtab-right">Inspector</button>
+  </div>
+
+  <!-- ═════════ BOTTOM DOCK · 4D TIMELINE ═════════ -->
+  <footer id="dock-bottom" class="off">
+    <section class="panel" id="profile" hidden>
+      <header><span class="led"></span>Cross-section slicer<span class="grow"></span><span class="badge" id="profile-info">--</span><button class="btn icon" id="profile-close" title="Close slicer" style="height:22px;width:22px;margin-left:6px">✕</button></header>
+      <div class="panel-body"><canvas id="profile-canvas" aria-label="Terrain profile"></canvas></div>
+    </section>
+    <section class="panel timeline" aria-label="4D timeline">
+      <button class="tl-play" id="tl-play" aria-label="Play or pause the time series"><svg viewBox="0 0 16 16" id="tl-play-ico"><path d="M4 2.5v11l9-5.5z"/></svg></button>
+      <div class="tl-date"><b id="tl-date-main">2025-11-28</b><span id="tl-date-sub">E00 · reference pass</span></div>
+      <div class="tl-track" id="tl-track"><canvas id="tl-canvas"></canvas></div>
+      <div class="tl-side">
+        <div class="tl-speed" id="tl-speed" role="group" aria-label="Playback speed">
+          <button data-v="0.5" aria-pressed="false">½×</button><button data-v="1" aria-pressed="true">1×</button><button data-v="2" aria-pressed="false">2×</button><button data-v="4" aria-pressed="false">4×</button>
+        </div>
+        <span class="mono" style="font-size:9px;color:var(--ink-faint);text-align:center">12 d / s at 1×</span>
+      </div>
+      <div class="minimap" id="minimap" title="2D radar view: click for split screen"><canvas id="mini2d" width="128" height="128"></canvas><span>2D RADAR</span></div>
+    </section>
+  </footer>
+</div>
+
+<!-- ═════════ OVERLAYS ═════════ -->
+<div class="overlay" id="deck" role="dialog" aria-modal="true" aria-labelledby="deck-h">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div><h2 id="deck-h">MISSION DECK · <em>the four Earth waltzes</em></h2><p>Every scene is built on a real elevation model. The radar signals on top of it come from physics-based NISAR simulation: real formulas, real wavelengths, real orbit geometry.</p></div>
+      <button class="close-x" data-close="deck" aria-label="Close">✕</button>
+    </div>
+    <div class="deck-grid" id="deck-grid"></div>
+  </div>
+</div>
+
+<div class="overlay" id="codex" role="dialog" aria-modal="true" aria-labelledby="codex-h">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div><h2 id="codex-h">PHYSICS <em>CODEX</em></h2><p>Every number in the HUD comes from one of these equations, evaluated live on the GPU (shaders) and the CPU (inspector, unwrapping, change detection).</p></div>
+      <button class="close-x" data-close="codex" aria-label="Close">✕</button>
+    </div>
+    <div class="facts">
+      <div class="fact"><div class="k">Launch</div><div class="v">30 Jul 2025<small> · GSLV-F16</small></div></div>
+      <div class="fact"><div class="k">Science phase</div><div class="v">28 Nov 2025</div></div>
+      <div class="fact"><div class="k">Orbit</div><div class="v">747 km<small> · SSO 98.4°</small></div></div>
+      <div class="fact"><div class="k">Repeat</div><div class="v">12 days</div></div>
+      <div class="fact"><div class="k">Swath</div><div class="v">242 km<small> · SweepSAR</small></div></div>
+      <div class="fact"><div class="k">Reflector</div><div class="v">12 m<small> · 9 m boom</small></div></div>
+      <div class="fact"><div class="k" style="color:var(--lband)">L-SAR · NASA/JPL</div><div class="v">1.257 GHz<small> · 23.85 cm</small></div></div>
+      <div class="fact"><div class="k" style="color:var(--sband)">S-SAR · ISRO</div><div class="v">3.20 GHz<small> · 9.37 cm</small></div></div>
+    </div>
+    <div class="codex-grid">
+      <article class="codex-card"><h4>1 · Phase becomes millimetres</h4>
+        <div class="eq">Δd<sub>LoS</sub> = <span class="frac"><span>λ</span><span>4π</span></span> · Δφ<sub>unwrapped</sub></div>
+        <p>One full colour cycle (2π) is <b>λ/2</b> of motion along the line of sight: <b>11.92 cm in L-band</b> and <b>4.68 cm in S-band</b>. Here Δd &gt; 0 means the ground moved toward the satellite. The TERRAPULSE vertex shader applies this to every vertex of the mesh, 60 times a second.</p></article>
+      <article class="codex-card"><h4>2 · Line of sight &amp; 3D fusion</h4>
+        <div class="eq">ê = (sinθ·sinα, sinθ·cosα, cosθ) &nbsp; x̂ = (AᵀWA)<sup>−1</sup>AᵀW·d</div>
+        <p>NISAR looks left, so α = heading + 90°. Ascending and descending line-of-sight phase, plus azimuth offsets (multiple-aperture InSAR), give four equations for (U<sub>e</sub>, U<sub>n</sub>, U<sub>z</sub>). A near-polar orbit sees north–south motion poorly, so the inspector reports σ<sub>n</sub> in centimetres while σ<sub>e</sub> and σ<sub>z</sub> stay at millimetres.</p></article>
+      <article class="codex-card"><h4>3 · Mogi magma source</h4>
+        <div class="eq">u<sub>z</sub> = <span class="frac"><span>(1−ν)·ΔV·d</span><span>π·R³</span></span> &nbsp; u<sub>r</sub> = <span class="frac"><span>(1−ν)·ΔV·r</span><span>π·R³</span></span> &nbsp; R² = r² + d²</div>
+        <p>A point pressure source in an elastic half-space (ν = 0.25). The Rainier drill injects up to 9×10⁷ m³ at 6 km depth. That produces concentric fringes and lifts the summit by about 60 cm.</p></article>
+      <article class="codex-card"><h4>4 · A locked fault</h4>
+        <div class="eq">v(x) = <span class="frac"><span>V</span><span>π</span></span> arctan<span class="frac"><span>x</span><span>D</span></span> &nbsp; u(x) = <span class="frac"><span>s</span><span>π</span></span> arctan<span class="frac"><span>D</span><span>x</span></span></div>
+        <div class="eq" style="margin-top:6px">M₀ = μ·L·D·s̄ &nbsp; M<sub>w</sub> = ⅔(log₁₀M₀ − 9.1) &nbsp; Δσ = <span class="frac"><span>2</span><span>π</span></span>·μ·<span class="frac"><span>s̄</span><span>D</span></span></div>
+        <p>Interseismic loading (V = 34 mm/yr, locking depth D = 15 km) and coseismic slip of a vertical strike-slip fault (screw dislocation). Since 1857 the Carrizo segment has stored about 5.7 m of slip deficit, which equals an Mw ≈ 7.9 earthquake.</p></article>
+      <article class="codex-card"><h4>5 · Coherence &amp; change detection</h4>
+        <div class="eq">γ̂ = <span class="frac"><span>|Σ S₁·S₂*|</span><span>√(Σ|S₁|² · Σ|S₂|²)</span></span> &nbsp; σ<sub>φ</sub> = <span class="frac"><span>√(1−γ²)</span><span>γ·√(2L)</span></span></div>
+        <p>CCD simulates three complex SLCs, estimates γ̂ in 5×5 windows with integral images, and flags pixels where Δγ = γ̂<sub>pre</sub> − γ̂<sub>co</sub> &gt; 0.35. Naturally incoherent water and forest stay quiet because they were already incoherent before the event. The phase noise added in the shaders follows the Cramér–Rao bound σ<sub>φ</sub>.</p></article>
+      <article class="codex-card"><h4>6 · Freeman–Durden decomposition</h4>
+        <div class="eq">f<sub>v</sub> = 3⟨|HV|²⟩ &nbsp; P<sub>s</sub> = f<sub>s</sub>(1+|β|²) &nbsp; P<sub>d</sub> = f<sub>d</sub>(1+|α|²) &nbsp; P<sub>v</sub> = <span class="frac"><span>8f<sub>v</sub></span><span>3</span></span></div>
+        <p>The volume part is removed first. The sign of Re⟨HH·VV*⟩ − f<sub>v</sub>/3 then selects surface-dominant (α = −1) or double-bounce-dominant (β = 1) scattering. Red = double bounce (flooded trunks, walls), green = volume (canopy), blue = surface (soil, water, ice). It is computed for every pixel in both bands.</p></article>
+      <article class="codex-card"><h4>7 · Why NISAR carries two radars</h4>
+        <p><b>S-band (9.37 cm)</b> scatters in leaves and thin branches, so it maps the canopy. <b>L-band (23.85 cm)</b> passes through to trunks and to the ground. Over standing water the trunk and the water form a corner reflector (double bounce), so L-band keeps its phase for weeks while S-band decorrelates within days. In this model, biomass from HV backscatter saturates near 250 t/ha in L-band and near 90 t/ha in S-band.</p></article>
+      <article class="codex-card"><h4>8 · Water under the canopy</h4>
+        <div class="eq">Δh<sub>water</sub> = <span class="frac"><span>λ · Δφ</span><span>4π · cosθ</span></span></div>
+        <p>Double-bounce phase in flooded forest measures changes in water level (Alsdorf et al., 2000; Wdowinski et al., 2004). The X-ray lens shows exactly that: inside the lens L-band reaches the water, outside it S-band sees only leaves.</p></article>
+      <article class="codex-card"><h4>9 · Phase unwrapping</h4>
+        <div class="eq">φ<sub>k</sub> = φ<sub>k−1</sub> + W(ψ<sub>k</sub> − ψ<sub>k−1</sub>), &nbsp; W(x) ∈ (−π, π]</div>
+        <p>A quality-guided flood fill (max-heap on coherence) integrates the wrapped phase ψ from a stable reference pixel. It always crosses the most coherent pixel next, so the Itoh condition holds where the data allow. The animation shows the unwrapping front sweeping the scene, and the HUD reports RMS error against the true field.</p></article>
+      <article class="codex-card"><h4>10 · Hydrology &amp; infrastructure</h4>
+        <div class="eq">flooded ⇔ h<sub>water</sub>(t) ≥ z<sub>spill</sub> &nbsp; β = Δs / L &gt; 1/500</div>
+        <p>A priority-flood (Barnes et al., 2014) gives every cell the lowest water level that can reach it, so levees really hold the water back. In Mexico City, the 10-year angular distortion β of every city block is checked against Bjerrum's (1963) limit for buildings where cracking is not acceptable.</p></article>
+      <article class="codex-card" style="grid-column:1/-1"><h4>Data, honestly</h4>
+        <p><b>Real:</b> every elevation model (USGS 3DEP, SRTM, INEGI via AWS Terrain Tiles; Copernicus GLO-90 for Greenland and the Danube Delta), NISAR orbit and band parameters, and all equations above. <b>Simulated:</b> the deformation, backscatter, coherence and events. They are forward models with literature-scale parameters, built to rehearse what NISAR measures. <b>Bring your own:</b> <span class="mono">tools/csar_pack.py</span> turns ASF HyP3 / NISAR GUNW GeoTIFFs into a CSAR-PACK that this app loads with drag and drop. Fringes, coherence and the 3D mesh then come from the real interferogram.</p>
+        <p class="src">Elevation: AWS Terrain Tiles (SRTM, USGS 3DEP, GMTED2010, INEGI). Copernicus DEM GLO-90 © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA. Built with three.js.</p></article>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="export" role="dialog" aria-modal="true" aria-labelledby="export-h">
+  <div class="sheet export-sheet">
+    <div class="sheet-head">
+      <div><h2 id="export-h">DATA <em>DOWNLINK</em></h2><p>Every number behind the current view, packaged for Excel or for code. Each dataset comes with a plain-language explanation of what it is, how it was computed and how to read it.</p></div>
+      <button class="close-x" data-close="export" aria-label="Close">✕</button>
+    </div>
+    <div class="dl-grid">
+      <div class="dl-stage"><canvas id="dl-canvas" aria-label="Animated downlink from NISAR to a ground station"></canvas><div class="dl-status" id="dl-status" aria-live="polite"></div></div>
+      <div class="dl-list" id="dl-list" aria-label="Datasets in this export"></div>
+    </div>
+    <div class="dl-actions">
+      <button class="dl-btn xlsx" id="dl-xlsx"><span class="dl-badge">XLSX</span><b>EXCEL WORKBOOK</b><span>colour-coded sheets, charts, radar images and an explanation for every dataset</span></button>
+      <button class="dl-btn csv" id="dl-csv"><span class="dl-badge">ZIP</span><b>CSV PACK</b><span>one CSV per dataset + README.txt, ready for Python, R, MATLAB or QGIS</span></button>
+    </div>
+    <p class="dl-foot" id="dl-foot"></p>
+  </div>
+</div>
+
+<section class="panel" id="tour-card" aria-live="polite">
+  <div class="step" id="tour-step">JURY TOUR · 1 / 10</div>
+  <h3 id="tour-title">--</h3>
+  <p id="tour-text">--</p>
+  <div class="bar"><i id="tour-bar"></i></div>
+  <div class="row"><span>Esc ends the tour · → skips a step</span><div style="display:flex;gap:6px"><button class="btn" id="tour-next">Next →</button><button class="btn" id="tour-exit">End tour</button></div></div>
+</section>
+
+<div id="toasts" aria-live="polite"></div>
+<div id="drop">Drop a CSAR-PACK<small>scene.png + scene.json, made by tools/csar_pack.py from ASF HyP3 or NISAR GUNW products</small></div>
+<input type="file" id="file-in" accept=".png,.json,image/png,application/json" multiple hidden>
+
+<div id="boot">
+  <div class="boot-inner">
+    <svg class="boot-logo" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <linearGradient id="bl-sweep" x1="0" x2="1"><stop offset="0" stop-color="#3ee6ff" stop-opacity="0"/><stop offset="1" stop-color="#3ee6ff" stop-opacity=".7"/></linearGradient>
+        <radialGradient id="bl-core"><stop offset="0" stop-color="#ffb648" stop-opacity=".9"/><stop offset="1" stop-color="#ffb648" stop-opacity="0"/></radialGradient>
+      </defs>
+      <circle cx="60" cy="60" r="56" fill="none" stroke="#ffb648" stroke-width="1" stroke-dasharray="2 4" opacity=".7"><animateTransform attributeName="transform" type="rotate" from="0 60 60" to="-360 60 60" dur="24s" repeatCount="indefinite"/></circle>
+      <circle cx="60" cy="60" r="44" fill="none" stroke="#3ee6ff" stroke-width="1" opacity=".55"/>
+      <circle cx="60" cy="60" r="30" fill="none" stroke="#dcebfa" stroke-width=".8" opacity=".4"/>
+      <circle cx="60" cy="60" r="16" fill="none" stroke="#ffb648" stroke-width=".8" opacity=".5"/>
+      <ellipse cx="60" cy="60" rx="56" ry="16" fill="none" stroke="#ffb648" stroke-width=".8" opacity=".5" transform="rotate(-24 60 60)"/>
+      <ellipse cx="60" cy="60" rx="50" ry="12" fill="none" stroke="#3ee6ff" stroke-width=".8" opacity=".5" transform="rotate(32 60 60)"/>
+      <path d="M60 60 L60 4 A56 56 0 0 1 108.5 32 Z" fill="url(#bl-sweep)"><animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="2.6s" repeatCount="indefinite"/></path>
+      <circle cx="60" cy="60" r="12" fill="url(#bl-core)"/>
+      <circle cx="60" cy="60" r="2.4" fill="#fff"/>
+    </svg>
+    <div class="boot-title">CHRONO<i>·</i>SAR</div>
+    <div class="boot-sub">Dancing with the SARs · NISAR L+S</div>
+    <div class="boot-bars"><div class="boot-bar l"><i id="boot-l"></i></div><div class="boot-bar s"><i id="boot-s"></i></div></div>
+    <div class="boot-log" id="boot-log"></div>
+    <div class="boot-err" id="boot-err" hidden></div>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<!--__DATA__-->
+<script type="module">
+/*__JS__*/
+</script>
