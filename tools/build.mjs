@@ -16,7 +16,9 @@ const body = tpl.replace('/*__CSS__*/', () => rd('src/styles.css'))
   .replace('/*__JS__*/', () => js);
 const [head, rest] = body.split('<!--__HEAD_END__-->');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
-fs.writeFileSync(path.join(root, 'dist/index.html'), `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n${head}</head>\n<body>\n${rest}</body>\n</html>\n`);
+const fullHtml = `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n${head}</head>\n<body>\n${rest}</body>\n</html>\n`;
+fs.writeFileSync(path.join(root, 'dist/index.html'), fullHtml);
+fs.writeFileSync(path.join(root, 'index.html'), fullHtml);
 if (process.argv.includes('--check')) fs.writeFileSync(path.join(root, 'dist/_bundle_check.mjs'), js);
 console.log('dist/index.html', (fs.statSync(path.join(root, 'dist/index.html')).size / 1e6).toFixed(2), 'MB');
 
